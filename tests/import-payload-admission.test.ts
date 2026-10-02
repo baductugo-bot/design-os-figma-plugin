@@ -79,7 +79,7 @@ describe('main IMPORT_PAYLOAD owning boundary', () => {
     expect(effects.createEffectStyles).toHaveBeenCalledWith([]);
     expect(effects.createFigmaNode).toHaveBeenCalledOnce();
     expect(figma.currentPage.appendChild).toHaveBeenCalledOnce();
-    expect(effects.createFigmaNode.mock.results[0].value).resolves.toMatchObject({ x: 17, y: 23 });
+    await expect(effects.createFigmaNode.mock.results[0].value).resolves.toMatchObject({ x: 17, y: 23 });
   });
 
   it('keeps legacy null token input canonical before invoking import consumers', async () => {
