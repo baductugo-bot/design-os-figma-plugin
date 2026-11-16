@@ -1,0 +1,62 @@
+name: Safe sync from Jang upstream
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-jang-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'baductugo-bot/design-os-figma-plugin'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch and merge upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git remote add upstream \
+            https://github.com/jangtrinh/design-os-figma-plugin.git
+
+          git fetch --no-tags upstream main
+
+          BASE="$(git merge-base HEAD FETCH_HEAD)"
+
+          CHANGED_WORKFLOWS="$(
+            git diff --name-only "$BASE" FETCH_HEAD \
+              -- .github/workflows
+          )"
+
+          if [[ -n "$CHANGED_WORKFLOWS" ]]; then
+            echo "::error::Upstream workflows changed."
+            echo "$CHANGED_WORKFLOWS"
+            echo "Manual review required."
+            exit 1
+          fi
+
+          if git merge-base --is-ancestor FETCH_HEAD HEAD; then
+            echo "Already up to date."
+            exit 0
+          fi
+
+          git merge --no-edit FETCH_HEAD
+
+          git push origin HEAD:main
